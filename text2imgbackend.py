@@ -34,6 +34,7 @@ class Text2ImgBackend(AIBackend):
 
 
     def isReady(self) -> bool:
+        self.checkpoint_potentially_loaded = True
         if super().isReady():
             return True
 
@@ -41,6 +42,10 @@ class Text2ImgBackend(AIBackend):
             return self._stable_diffusion_ui_is_ready()
             
         raise NotImplementedError(f"Service type {self.type} is not implemented.")
+
+    def startService(self) -> bool:
+        self.checkpoint_potentially_loaded = True
+        return super().startService()
 
     def unloadModel(self) -> bool:
         if not self.isRunning():
