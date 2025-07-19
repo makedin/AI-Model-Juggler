@@ -1,4 +1,4 @@
-# AI-Model-Juggler
+# AI Model Juggler
 
 Ai Model Juggler exposes HTTP endpoints associated with different AI backends ([llama.cpp](https://github.com/ggml-org/llama.cpp) and [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) are currently supported) and spins those backends up and down transparently. This way multiple models can be run "simultaneously" even if they don't fit in the available VRAM.
 
@@ -103,7 +103,7 @@ Example config.json:
 
 The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case the a vision capable Mistral Small 3.2 will be used instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
 
-The ```warmup``` section specifies that first, the image generation backend is started, and then the vision capable LLM inference backend. As the feature allowing the image generation backend to keep running with model unloaded is enabled by default, the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
+The ```warmup``` section specifies that first, the image generation backend is started, and then the vision capable LLM inference backend. As the feature allowing the image generation backend to keep running with model unloaded is enabled, the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
 
 
 ## Limitations
