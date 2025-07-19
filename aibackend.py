@@ -97,8 +97,7 @@ class AIBackend:
             raise RuntimeError("Service failed to start.")
 
 
-        print(self.service_process.pid)
-        print(self.backend_port)
+        print(f"{self.service_name} started with PID {self.service_process.pid}. It is running on port {self.backend_port}.")
 
         delay = self.startup_delay_multiplier
         while True:
