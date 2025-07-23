@@ -4,9 +4,10 @@ import threading
 from typing import Tuple
 
 from aibackendmanager import AIBackendManager
-from llmbackend import LLMBackend
-from text2imgbackend import Text2ImgBackend
-from config import getConfig, ServerConfig
+from config import getConfig, ServerConfig, AIBackendType
+
+from llamacppbackend import LLamaCPPBackend
+from sdwebuibackend import SDWebUIBackend
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -24,7 +25,7 @@ class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         config = getConfig()
 
-        for server_config in config.servers.values():
+        for server_config in config.servers:
             if server_config.port == self.port:
                 self.server_name = server_config.name
                 self.endpoints = server_config.endpoints
@@ -38,7 +39,7 @@ class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
         path = self.path
         for endpoint in self.endpoints:
             if endpoint.path_prefix == '' or self.path.startswith(endpoint.path_prefix):
-                backend = ai_backend_manager.getBackend(f"{self.port}:{endpoint.model}")
+                backend = ai_backend_manager.getBackend(f"{self.server_name}:{endpoint.name}")
 
                 if endpoint.strip_prefix:
                     path = self.path[len(endpoint.path_prefix):]
@@ -74,25 +75,23 @@ def run_server(handler_class, config: ServerConfig):
 config = getConfig()
 ai_backend_manager = AIBackendManager()
 
+backend_classes = {
+    AIBackendType.LLAMACPP: "LLamaCPPBackend",
+    AIBackendType.SDWEBUI: "SDWebUIBackend",
+}
+
 handler_threads = []
 
-for server_name in config.servers:
-    server_config = config.servers[server_name]
-
+for server_config in config.servers:
     for endpoint in server_config.endpoints:
-        model = config.models[endpoint.model]
+        backend_config = getattr(config.backends, endpoint.backend.name.lower())
 
-        backend_config = getattr(config.backends, model.type.name.lower())
+        class_name = backend_classes.get(endpoint.backend)
+        assert class_name is not None, f"Unsupported backend type: {endpoint.backend}"
 
-        if model.type.isInferenceBackend():
-            backend = LLMBackend(backend_config, model, server_config.host)
-        elif model.type.isImageGenerationBackend():
-            backend = Text2ImgBackend(backend_config, model, server_config.host)
-        else:
-            # again, this is here in case we add more backend types in the future
-            raise ValueError(f"Unsupported model type: {model.type}")
+        backend = globals()[class_name](backend_config, server_config.host, endpoint.name, endpoint.parameters)
 
-        ai_backend_manager.addBackend(backend, server_config.port)
+        ai_backend_manager.addBackend(backend, server_config.name, endpoint.name)
 
     handler_threads.append(threading.Thread(target=run_server, args=(AIAPIHandler, server_config)))
 
@@ -105,7 +104,14 @@ if len(config.warmup) > 0:
     print(f"Warming up {len(config.warmup)} backends...")
 
     for warmup_config in config.warmup:
-        server_config = config.servers[warmup_config.server]
+        server_config = None
+        for server in config.servers:
+            if server.name == warmup_config.server:
+                server_config = server
+                break
+
+        assert server_config is not None, f"Server {warmup_config.server} not found in configuration"
+
         endpoint_path_prefix = None
         endpoint_config = None
         for endpoint in server_config.endpoints:
@@ -116,4 +122,4 @@ if len(config.warmup) > 0:
 
         assert endpoint_config is not None, f"Endpoint {warmup_config.endpoint} not found in server {server_config.name}"
 
-        ai_backend_manager.getBackend(f"{server_config.port}:{endpoint_config.model}")
+        ai_backend_manager.getBackend(f"{server_config.name}:{endpoint_config.name}")

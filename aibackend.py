@@ -3,8 +3,9 @@ import time
 
 from pathlib import Path
 from subprocess import Popen, PIPE
+from typing import List
 
-from config import AIBackendConfig, AIModelConfig
+from config import AIBackendConfig
 
 def free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -13,24 +14,28 @@ def free_port():
 
 
 class AIBackend:
-    def __init__(self, config: AIBackendConfig, model: AIModelConfig, host: str):
+    def __init__(self, config: AIBackendConfig, server: str, endpoint: str, parameters: List = []):
         self.service_process = None
         self.is_ready = False
         self.backend_port = None
-        self.host = host
+        self.host = config.host
 
         self.type = config.type
-        self.service_name = "[Service name not set]"
-        self.model_name = model.name
+        self.service_name = f"{self.type.name} backend ({server}, {endpoint})"
+        self.endpoint = endpoint
 
         self.service_binary = config.binary
-        self.service_parameters = model.parameters or []
+        self.service_parameters = config.default_parameters + parameters
+
+        self.model_unloading = config.model_unloading
+
+        self.kv_cache_save_path = config.kv_cache_save_path
 
         self.initial_startup_delay = 0.15  # seconds
         self.subsequent_startup_delay = 0.3  # seconds
         self.startup_delay_multiplier = 1.1
 
-    def isRunning(self):
+    def isRunning(self) -> bool:
         if self.service_process is None:
             return False
 
@@ -67,7 +72,26 @@ class AIBackend:
 
 
     def stopService(self, force: bool = False):
-        self.shutdown()
+        if not self.isRunning():
+            return
+
+        if self.kv_cache_save_path is not None:
+            self.saveKVCache()
+
+        if not force and self.model_unloading is True:
+            self.unloadModel()
+
+        else:
+            self.shutdown()
+
+    def unloadModel(self):
+        raise NotImplementedError("Model unloading is not implemented for this backend.")
+
+    def saveKVCache(self) -> bool:
+        raise NotImplementedError("KV cache saving is not implemented for this backend.")
+
+    def restoreKVCache(self) -> bool:
+        raise NotImplementedError("KV cache restoring is not implemented for this backend.")
 
     def startService(self) -> bool:
         elapsed_time_reference = time.monotonic()
@@ -97,35 +121,30 @@ class AIBackend:
             raise RuntimeError("Service failed to start.")
 
 
-        print(f"{self.service_name} started with PID {self.service_process.pid}. It is running on port {self.backend_port}.")
-
         delay = self.startup_delay_multiplier
         while True:
             if self.isReady():
-                elapsed_time = time.monotonic() - elapsed_time_reference
-                print(f"{self.service_name} started in {elapsed_time:.2f} seconds.")
-                print(f"{self.service_name} is running on port {self.backend_port}.")
+                if self.kv_cache_save_path is not None:
+                    self.restoreKVCache()
+
                 self._postStartUp()
+
+                elapsed_time = time.monotonic() - elapsed_time_reference
+                print(f"{self.service_name} (PID: {self.service_process.pid}) started in {elapsed_time:.2f} seconds.")
+                print(f"{self.service_name} is running on port {self.backend_port}.")
+
                 return True
+
 
             # wait for the service to be ready
             time.sleep(delay)
             delay *= self.startup_delay_multiplier
 
-    def _extraPopenParameters(self) -> list:
-        """
-        Override this method in subclasses to provide additional parameters for the Popen command.
-        """
-        return []
+    def _extraPopenParameters(self, params: List = []) -> List:
+        return params
 
     def _postStartUp(self):
-        """
-        Override this method in subclasses to perform additional actions after the service has started.
-        """
         pass
 
     def _preShutdown(self):
-        """
-        Override this method in subclasses to perform additional actions before the service is stopped.
-        """
         pass

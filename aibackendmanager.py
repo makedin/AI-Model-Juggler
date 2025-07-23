@@ -1,29 +1,29 @@
+from typing import Dict
 from aibackend import AIBackend
 
 class AIBackendManager:
     def __init__(self):
-        self._backends = {}
+        self._backends: Dict[str, AIBackend] = {}
 
-    def addBackend(self, backend: AIBackend, port: int):
-        self._backends[f"{port}:{backend.model_name}"] = backend
+    def addBackend(self, backend: AIBackend, server: str, endpoint: str):
+        self._backends[f"{server}:{endpoint}"] = backend
 
 
-    def stopBackend(self, model_name: str):
-        if model_name in self._backends:
-            backend = self._backends[model_name]
+    def stopBackend(self, server_endpoint: str):
+        if server_endpoint in self._backends:
+            backend = self._backends[server_endpoint]
             backend.stopService()
 
-    def getBackend(self, model_name: str) -> AIBackend:
-        if model_name in self._backends:
-            self.stopAllBackends(exclude=[model_name])
-            model = self._backends[model_name]
+    def getBackend(self, server_endpoint: str) -> AIBackend:
+        if server_endpoint in self._backends:
+            self.stopAllBackends(exclude=[server_endpoint])
+            model = self._backends[server_endpoint]
             model.startService()
             return model
 
-        raise ValueError(f"Backend for model '{model_name}' not found.")
-
+        raise ValueError(f"Backend for server:endpoint '{server_endpoint}' not found.")
 
     def stopAllBackends(self, exclude: list[str] = []):
-        for model_name, backend in self._backends.items():
-            if model_name not in exclude:
+        for server_endpoint, backend in self._backends.items():
+            if server_endpoint not in exclude:
                 backend.stopService()

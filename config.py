@@ -9,47 +9,43 @@ from typing import Dict, List
 class AIBackendType(Enum):
     LLAMACPP = "llamacpp"
     KOBOLDCPP = "koboldcpp"
-    STABLE_DIFFUSION_UI = "stable_diffusion_ui"
+    SDWEBUI = "sdwebui"
 
-    def isInferenceBackend(self) -> bool:
-        return self in (AIBackendType.LLAMACPP, AIBackendType.KOBOLDCPP)
+    def supportsKVCacheRestoring(self) -> bool:
+        return self in [AIBackendType.LLAMACPP]
 
-    def isImageGenerationBackend(self) -> bool:
-        return self == AIBackendType.STABLE_DIFFUSION_UI
+    def supportsModelUnloading(self) -> bool:
+        return self in [AIBackendType.SDWEBUI]
+
 
 @dataclass
 class AIBackendConfig:
     type:   AIBackendType
     binary: Path
+    default_parameters: List
+    kv_cache_save_path: Path|None
+    model_unloading: bool
+    host: str
 
-    def __init__(self, type: AIBackendType, **kwargs):
+    def __init__(self, type: AIBackendType, binary: str|Path, default_parameters: List|None = None, kv_cache_save_path: str|Path|None = None, model_unloading: bool = True, host: str = "localhost"):
         self.type = type
-
-        for key, value in kwargs.items():
-            if key == 'binary':
-                self.binary = Path(value)
-            else:
-                setattr(self, key, value)
-
-@dataclass
-class InferenceBackendConfig(AIBackendConfig):
-    kv_cache_save_path: Path|None = None
-
-@dataclass
-class ImageGeneratorConfig(AIBackendConfig):
-    pass
+        self.binary = Path(binary)
+        self.default_parameters = default_parameters if default_parameters is not None else []
+        self.kv_cache_save_path = Path(kv_cache_save_path) if type.supportsKVCacheRestoring() and kv_cache_save_path is not None else None
+        self.model_unloading = type.supportsModelUnloading() and model_unloading
+        self.host = host
 
 @dataclass
 class BackendsConfig:
-    llamacpp: InferenceBackendConfig|None = None
-    koboldcpp: InferenceBackendConfig|None = None
-    stable_diffusion_ui: ImageGeneratorConfig|None = None
+    llamacpp: AIBackendConfig|None = None
+    koboldcpp: AIBackendConfig|None = None
+    sdwebui: AIBackendConfig|None = None
 
 
     def __init__(self, config: Dict[str, Dict]):
         self.llamacpp = None
         self.koboldcpp = None
-        self.stable_diffusion_ui = None
+        self.sdwebui = None
 
         for key in config.keys():
             if key not in AIBackendType:
@@ -60,40 +56,28 @@ class BackendsConfig:
             if getattr(self, key) is not None:
                 raise ValueError(f"Duplicate backend configuration for {key}")
 
-            if backend_type.isInferenceBackend():
-                backend = InferenceBackendConfig(backend_type, **config[key])
-            elif backend_type.isImageGenerationBackend():
-                backend = ImageGeneratorConfig(backend_type, **config[key])
-            else:
-                # not needed for now, but better not leave any footguns lying around
-                raise ValueError(f"Unsupported backend type: {backend_type}")
+            backend = AIBackendConfig(backend_type, **config[key])
 
             setattr(self, key, backend)
-
-
-
-
-@dataclass
-class AIModelConfig:
-    type: AIBackendType
-    name: str
-    parameters: List
-    kv_cache_saving: bool = True
-    checkpoint_unloading: bool = True
 
 @dataclass
 class EndpointConfig:
     name: str
-    path_prefix: str
-    model: str
-    strip_prefix: bool = False
+    backend: AIBackendType
+    parameters: List
 
-    def __init__(self, name: str, path_prefix: str, model: str, strip_prefix: bool = False):
+    path_prefix: str = ""
+    strip_prefix: bool = True
+
+    kv_cache_saving: bool = True
+
+    def __init__(self, name: str, backend: str|AIBackendType, path_prefix: str, strip_prefix: bool = False, parameters: List|None = None, kv_cache_saving: bool = True):
         self.name = name
+        self.backend = backend if isinstance(backend, AIBackendType) else AIBackendType(backend)
         self.path_prefix = path_prefix
-        self.model = model
         self.strip_prefix = strip_prefix
-
+        self.parameters = parameters if parameters is not None else []
+        self.kv_cache_saving = kv_cache_saving
 
 
 @dataclass
@@ -113,9 +97,11 @@ class ServerConfig:
         for endpoint_config in endpoints:
             endpoint = EndpointConfig(
                 name=endpoint_config['name'],
+                backend=endpoint_config['backend'],
                 path_prefix=endpoint_config.get('path_prefix', ''),
-                model=endpoint_config['model'],
-                strip_prefix=endpoint_config.get('strip_prefix', False)
+                strip_prefix=endpoint_config.get('strip_prefix', False),
+                parameters=endpoint_config.get('parameters', []),
+                kv_cache_saving=endpoint_config.get('kv_cache_saving', True)
             )
             self.endpoints.append(endpoint)
 
@@ -127,8 +113,7 @@ class WarmupConfig:
 @dataclass
 class Config:
     backends: BackendsConfig
-    models: Dict[str, AIModelConfig]
-    servers: Dict[str, ServerConfig]
+    servers: List[ServerConfig]
     warmup: List[WarmupConfig]
 
 
@@ -157,36 +142,15 @@ def loadConfig(path: Path|None) -> Config:
 
         backends_config = BackendsConfig(config_data['backends'])
 
-        models_config = {}
-        for name in config_data['models']:
-            if name in models_config:
-                raise ValueError(f"Duplicate model name: {name}")
-
-            model_config_data = config_data['models'][name]
-            backend_type_name = model_config_data['type']
-
-            if backend_type_name not in AIBackendType:
-                raise ValueError(f"Unknown backend type: {backend_type_name}")
-
-            model_config = AIModelConfig(
-                type=AIBackendType(backend_type_name),
-                name=name,
-                parameters=model_config_data.get('parameters', []),
-                kv_cache_saving=model_config_data.get('kv_cache_saving', True),
-                checkpoint_unloading=model_config_data.get('checkpoint_unloading', True)
-            )
-
-            models_config[name] = model_config
-
-        servers_config = {}
+        servers_config = []
         server_ports = set()
-        for server_name in config_data['servers']:
-            server = ServerConfig(server_name, **config_data['servers'][server_name])
+        for server_config in config_data['servers']:
+            server = ServerConfig(**server_config)
 
             if server.port in server_ports:
                 raise ValueError(f"Duplicate server port: {server.port}")
 
-            servers_config[server.name] = server
+            servers_config.append(server)
             server_ports.add(server.port)
 
         warmup = []
@@ -198,7 +162,6 @@ def loadConfig(path: Path|None) -> Config:
 
         config = Config(
             backends=backends_config,
-            models=models_config,
             servers=servers_config,
             warmup=warmup
         )
