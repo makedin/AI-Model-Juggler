@@ -22,12 +22,12 @@ class LLamaCPPBackend(AIBackend):
         self.kv_cache_saved = False
 
 
-    def _extraPopenParameters(self, params: List = []) -> List:
-        params += ["--port", str(self.backend_port)]
+    def _modifyParameters(self, parameters: List) -> List:
+        modified_parameters = parameters + ["--port", str(self.backend_port)]
         if self.kv_cache_save_path is not None:
-            params += ["--slot-save-path", str(self.kv_cache_save_path)]
+            modified_parameters += ["--slot-save-path", str(self.kv_cache_save_path)]
 
-        return params
+        return modified_parameters
 
 
     def isReady(self) -> bool:

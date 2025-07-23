@@ -106,10 +106,10 @@ class AIBackend:
 
         self.backend_port = free_port()
 
-        extra_parameters = self._extraPopenParameters()
+        parameters = self._modifyParameters(self.service_parameters)
 
         self.service_process = Popen(
-                [self.service_binary, *self.service_parameters, *extra_parameters],
+                [self.service_binary, *parameters],
                 stdout=PIPE,
                 stderr=PIPE,
                 text=True,
@@ -140,8 +140,8 @@ class AIBackend:
             time.sleep(delay)
             delay *= self.startup_delay_multiplier
 
-    def _extraPopenParameters(self, params: List = []) -> List:
-        return params
+    def _modifyParameters(self, parameters: List) -> List:
+        return parameters
 
     def _postStartUp(self):
         pass

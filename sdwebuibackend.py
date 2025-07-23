@@ -5,8 +5,8 @@ from typing import List
 from aibackend import AIBackend
 
 class SDWebUIBackend(AIBackend):
-    def _extraPopenParameters(self, params: List = []) -> List:
-            return params + ["--port", str(self.backend_port), '--nowebui']
+    def _modifyParameters(self, parameters: List = []) -> List:
+            return parameters + ["--port", str(self.backend_port), '--nowebui']
 
     def isReady(self) -> bool:
         self.checkpoint_potentially_loaded = True
