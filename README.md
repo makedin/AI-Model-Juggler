@@ -24,70 +24,61 @@ Example config.json:
     "backends": {
         "llamacpp": {
             "binary": "/path/to/llama.cpp/build/bin/llama-server",
-            "kv_cache_save_path": "/tmp/llama_kv_cache"
-        },
-        "stable_diffusion_ui": {
-            "binary": "/path/to/stable-diffusion-webui-forge/webui.sh"
-        }
-    },
-    "models": {
-        "gemma": {
-            "type": "llamacpp",
-            "parameters": [
-                "-m", "/path/to/google_gemma-3-27b-it-Q5_K_M.gguf",
-                "--no-mmap",
-                "--ctx-size", "16384",
+            "kv_cache_save_path": "/tmp/llama_kv_cache",
+            "default_parameters": [
                 "-ngl", "99",
+                "--no-mmap",
                 "-fa"
             ],
-            "kv_cache_saving": true
+            "host": "localhost"
         },
-        "vision": {
-            "type": "llamacpp",
-            "parameters": [
-                "-m", "/path/to/Mistral-Small-3.2-24B-Instruct-2506-Q5_K_M.gguf",
-                "--mmproj", "/path/to/mistral-small-3.2-mmproj-f16.gguf",
-                "--no-mmap",
-                "--ctx-size", "16384",
-                "-ngl", "99",
-                "-fa"
-            ]
-        },
-        "sdxl": {
-            "type": "stable_diffusion_ui",
-            "checkpoint_unloading": true
+        "sdwebui": {
+            "binary": "/path/to/stable-diffusion-webui-forge/webui.sh",
+            "model_unloading": true
         }
     },
-    "servers": {
-        "LLM": {
+    "servers": [
+        {
+            "name": "LLM",
             "host": "localhost",
             "port": 8021,
             "endpoints": [
                 {
                     "name": "Vision LLM",
                     "path_prefix": "/vision",
-                    "model": "vision",
-                    "strip_prefix": true
+                    "strip_prefix": true,
+
+                    "backend": "llamacpp",
+                    "parameters": [
+                        "-m", "/path/to/Mistral-Small-3.2-24B-Instruct-2506-Q5_K_M.gguf",
+                        "--mmproj", "/path/to/mistral-small-3.2-mmproj-f16.gguf",
+                        "--ctx-size", "16384"
+                    ],
+                    "kv_cache_saving": false
                 },
                 {
-                    "name": "Primary LLM",
-                    "path_prefix": "",
-                    "model": "gemma"
+                    "name": "Default LLM",
+                    "backend": "llamacpp",
+                    "parameters": [
+                        "-m", "/path/to/google_gemma-3-27b-it-Q5_K_M.gguf",
+                        "--ctx-size", "32768"
+                    ]
                 }
             ]
         },
-        "Image generation": {
+        {
+            "name": "Image generation",
             "host": "localhost",
             "port": 8022,
             "endpoints": [
                 {
                     "name": "Stable Diffusion",
                     "path_prefix": "",
-                    "model": "sdxl"
+                    "backend": "sdwebui"
                 }
             ]
         }
-    },
+    ],
     "warmup": [
         {
             "server": "Image generation",
@@ -101,7 +92,7 @@ Example config.json:
 }
 ```
 
-The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case the a vision capable Mistral Small 3.2 will be used instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
+The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case a vision capable Mistral Small 3.2 will be used instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
 
 The ```warmup``` section specifies that first, the image generation backend is started, and then the vision capable LLM inference backend. As the feature allowing the image generation backend to keep running with model unloaded is enabled, the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
 
