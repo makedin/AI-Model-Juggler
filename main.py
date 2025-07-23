@@ -1,10 +1,13 @@
+import argparse
 import http.server
 import socketserver
 import threading
+
+from pathlib import Path
 from typing import Tuple
 
 from aibackendmanager import AIBackendManager
-from config import getConfig, ServerConfig, AIBackendType
+from config import loadConfig, getConfig, ServerConfig, AIBackendType
 
 from llamacppbackend import LLamaCPPBackend
 from sdwebuibackend import SDWebUIBackend
@@ -71,8 +74,12 @@ def run_server(handler_class, config: ServerConfig):
         httpd.serve_forever()
 
 
+arg_parser = argparse.ArgumentParser(description="AI Model Juggler")
+arg_parser.add_argument("--config", "-c", type=str, default="config.json", help="Path to the configuration file")
+arguments = arg_parser.parse_args()
 
-config = getConfig()
+config = loadConfig(Path(arguments.config))
+
 ai_backend_manager = AIBackendManager()
 
 backend_classes = {
