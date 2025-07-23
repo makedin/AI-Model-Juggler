@@ -1,6 +1,14 @@
 # AI Model Juggler
 
-Ai Model Juggler exposes HTTP endpoints associated with different AI backends ([llama.cpp](https://github.com/ggml-org/llama.cpp) and [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge) are currently supported) and spins those backends up and down transparently. This way multiple models can be run "simultaneously" even if they don't fit in the available VRAM.
+Ai Model Juggler exposes HTTP endpoints associated with different AI backends and spins those backends up and down transparently. This way multiple models can be run "simultaneously" even if they don't fit in the available VRAM.
+
+## Supported backends
+
+The following backends are currently supported:
+- [llama.cpp](https://github.com/ggml-org/llama.cpp)
+- [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
+
+AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
 ## Performance
 
