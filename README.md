@@ -6,7 +6,10 @@ Ai Model Juggler exposes HTTP endpoints associated with different AI backends an
 
 The following backends are currently supported:
 - [llama.cpp](https://github.com/ggml-org/llama.cpp)
+  - Support KV cache saving and restoring
 - [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
+  - Supports model unloading (without killing the backend server)
+  - Supports attaching to a running server (the server must be started with ```--nowebgui``` or ```--api```)
 
 AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
@@ -41,6 +44,7 @@ Example config.json:
             "host": "localhost"
         },
         "sdwebui": {
+            "attach_to": "http://localhost:7861",
             "binary": "/path/to/stable-diffusion-webui-forge/webui.sh",
             "model_unloading": true
         }
