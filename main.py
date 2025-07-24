@@ -9,8 +9,8 @@ from typing import Tuple
 from aibackendmanager import AIBackendManager
 from config import loadConfig, getConfig, ServerConfig, AIBackendType
 
-from llamacppbackend import LLamaCPPBackend
-from sdwebuibackend import SDWebUIBackend
+from backends.llamacpp import LLamaCPPBackend
+from backends.sdwebui import SDWebUIBackend
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
