@@ -27,6 +27,9 @@ class AIBackend:
         self.service_binary = config.binary
         self.service_parameters = config.default_parameters + parameters
 
+        self.attached_instance = config.attached_instance
+        self.is_attached = False
+
         self.model_unloading = config.model_unloading
 
         self.kv_cache_save_path = config.kv_cache_save_path
@@ -47,8 +50,14 @@ class AIBackend:
 
         return True
 
+    def isAttached(self) -> bool:
+        return self.is_attached
+
 
     def isReady(self) -> bool:
+        if self.is_attached is True:
+            return True
+
         if not self.isRunning():
             raise RuntimeError(f"{self.service_name} is not running.")
 
@@ -84,6 +93,9 @@ class AIBackend:
         else:
             self.shutdown()
 
+    def attachInstance(self) -> bool:
+        raise NotImplementedError("Instance attachment is not implemented for this backend.")
+
     def unloadModel(self):
         raise NotImplementedError("Model unloading is not implemented for this backend.")
 
@@ -93,13 +105,31 @@ class AIBackend:
     def restoreKVCache(self) -> bool:
         raise NotImplementedError("KV cache restoring is not implemented for this backend.")
 
+
+    def readyService(self) -> bool:
+        if self.isAttached():
+            return True
+
+        if self.isRunning():
+            return True
+
+        if self.attached_instance is not None:
+            if self.attachInstance():
+                return True
+
+        if self.service_binary is not None:
+            return self.startService()
+
+        raise RuntimeError("Service binary is not set and no instance is attached.")
+
+
     def startService(self) -> bool:
         elapsed_time_reference = time.monotonic()
 
         if self.isRunning():
             return True
 
-        if not Path(self.service_binary).exists():
+        if not Path(self._getServiceBinaryPath()).exists():
             raise FileNotFoundError(f"Service binary {self.service_binary} does not exist.")
 
         print(f"Starting {self.service_name}...")
@@ -109,7 +139,7 @@ class AIBackend:
         parameters = self._modifyParameters(self.service_parameters)
 
         self.service_process = Popen(
-                [self.service_binary, *parameters],
+                [self._getServiceBinaryPath(), *parameters],
                 stdout=PIPE,
                 stderr=PIPE,
                 text=True,
@@ -140,6 +170,12 @@ class AIBackend:
             time.sleep(delay)
             delay *= self.startup_delay_multiplier
 
+    def backendURL(self) -> str:
+        if not self.isRunning():
+            raise RuntimeError("Service is not running.")
+
+        return f"http://{self.host}:{self.backend_port}"
+
     def _modifyParameters(self, parameters: List) -> List:
         return parameters
 
@@ -148,3 +184,15 @@ class AIBackend:
 
     def _preShutdown(self):
         pass
+
+    def _getServiceBinaryPath(self) -> Path:
+        if self.service_binary is None:
+            raise RuntimeError("Service binary path is not set.")
+
+        return self.service_binary
+
+    def _getAttachedInstance(self) -> str:
+        if self.attached_instance is None:
+            raise RuntimeError("Attached instance is not set.")
+
+        return self.attached_instance

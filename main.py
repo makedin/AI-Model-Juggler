@@ -50,10 +50,10 @@ class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
         assert backend is not None, f"No backend found for path: {self.path}"
 
-        server_api_path = f"http://{backend.host}:{backend.backend_port}"
+        backend_url = backend.backendURL()
 
         self.send_response(307)
-        self.send_header('Location', f"{server_api_path}{path}")
+        self.send_header('Location', f"{backend_url}{path}")
         self.end_headers()
 
     def do_GET(self):

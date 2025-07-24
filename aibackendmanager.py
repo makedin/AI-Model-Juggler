@@ -18,7 +18,7 @@ class AIBackendManager:
         if server_endpoint in self._backends:
             self.stopAllBackends(exclude=[server_endpoint])
             model = self._backends[server_endpoint]
-            model.startService()
+            model.readyService()
             return model
 
         raise ValueError(f"Backend for server:endpoint '{server_endpoint}' not found.")

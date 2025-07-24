@@ -8,13 +8,40 @@ class SDWebUIBackend(AIBackend):
     def _modifyParameters(self, parameters: List = []) -> List:
             return parameters + ["--port", str(self.backend_port), '--nowebui']
 
+    def attachInstance(self) -> bool:
+        if self.attached_instance is None:
+            raise RuntimeError(f"{self.service_name} is not configured to attach to a running instance.")
+
+        if self._testBackendAPI(True):
+            self.is_attached = True
+            self.checkpoint_potentially_loaded = True
+            print(f"Attached to {self.attached_instance}.")
+            return True
+
+        print(f"Failed to attach to {self.attached_instance}. The backend API is not responding.")
+        return False
+
     def isReady(self) -> bool:
         self.checkpoint_potentially_loaded = True
         if super().isReady():
             return True
 
+        return self._testBackendAPI()
+
+    def _postStartup(self):
+        self.checkpoint_potentially_loaded = True
+
+    def _apiBaseURL(self, force_attached_instance: bool = False) -> str:
+        if self.attached_instance is not None and (self.is_attached or force_attached_instance):
+            backend_url = self.attached_instance
+        else:
+            backend_url = self.backendURL()
+
+        return f'{backend_url}/sdapi/v1'
+
+    def _testBackendAPI(self, force_attached_instance: bool = False) -> bool:
         try:
-            with urllib.request.urlopen(f'http://{self.host}:{self.backend_port}/sdapi/v1/memory') as response:
+            with urllib.request.urlopen(f'{self._apiBaseURL(force_attached_instance)}/memory') as response:
                 if response.status == 200:
                     self.is_ready = True
                     self.checkpoint_potentially_loaded = True
@@ -26,9 +53,6 @@ class SDWebUIBackend(AIBackend):
             return False
 
 
-    def _postStartup(self):
-        self.checkpoint_potentially_loaded = True
-
     def unloadModel(self) -> bool:
         if not self.isRunning():
             return False
@@ -38,7 +62,7 @@ class SDWebUIBackend(AIBackend):
 
         try:
             request = urllib.request.Request(
-                f'http://{self.host}:{self.backend_port}/sdapi/v1/unload-checkpoint',
+                f'http://{self._apiBaseURL()}/unload-checkpoint',
                 method='POST'
             )
             with urllib.request.urlopen(request) as response:
@@ -50,3 +74,10 @@ class SDWebUIBackend(AIBackend):
                 return False
         except urllib.error.URLError as _:
             return False
+
+    def backendURL(self) -> str:
+        if self.is_attached:
+            assert self.attached_instance is not None, "Attached instance cannot be None (MyPy...)"
+            return self.attached_instance
+
+        return super().backendURL()

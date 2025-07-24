@@ -17,19 +17,53 @@ class AIBackendType(Enum):
     def supportsModelUnloading(self) -> bool:
         return self in [AIBackendType.SDWEBUI]
 
+    def supportsAttachingToRunningInstance(self) -> bool:
+        return self in [AIBackendType.SDWEBUI]
+
+    def supportsExcecutingDirectly(self) -> bool:
+        return self in [AIBackendType.LLAMACPP, AIBackendType.SDWEBUI]
+
 
 @dataclass
 class AIBackendConfig:
     type:   AIBackendType
-    binary: Path
+    binary: Path|None
+    attached_instance: str|None
+
     default_parameters: List
     kv_cache_save_path: Path|None
     model_unloading: bool
     host: str
 
-    def __init__(self, type: AIBackendType, binary: str|Path, default_parameters: List|None = None, kv_cache_save_path: str|Path|None = None, model_unloading: bool = True, host: str = "localhost"):
+    def __init__(self,
+                 type: AIBackendType,
+                 binary: str|Path|None = None,
+                 attach_to: str|None = None,
+                 default_parameters: List|None = None,
+                 kv_cache_save_path: str|Path|None = None,
+                 model_unloading: bool = True,
+                 host: str = "localhost"):
+
+
+        if not type.supportsAttachingToRunningInstance():
+            if attach_to is not None:
+                raise ValueError(f"Backend type {type} does not support attaching to a running instance.")
+            if binary is None:
+                raise ValueError(f"Backend type {type} requires a binary path.")
+
+        if not type.supportsExcecutingDirectly():
+            if binary is not None:
+                raise ValueError(f"Backend type {type} does not support executing directly.")
+            if attach_to is None:
+                raise ValueError(f"Backend type {type} requires a running instance to attach to.")
+
+        if binary is None and attach_to is None:
+            raise ValueError(f"Backend type {type} requires either a binary path or a running instance to attach to.")
+
+
         self.type = type
-        self.binary = Path(binary)
+        self.binary = Path(binary) if binary is not None else None
+        self.attached_instance = attach_to if type.supportsAttachingToRunningInstance() else None
         self.default_parameters = default_parameters if default_parameters is not None else []
         self.kv_cache_save_path = Path(kv_cache_save_path) if type.supportsKVCacheRestoring() and kv_cache_save_path is not None else None
         self.model_unloading = type.supportsModelUnloading() and model_unloading
