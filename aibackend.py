@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 from typing import List
 
-from config import AIBackendConfig, EndpointConfig, getConfig
+from config import AIBackendConfig, EndpointConfig, getConfig, ServerConfig
 
 def free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -14,15 +14,15 @@ def free_port():
 
 
 class AIBackend:
-    def __init__(self, config: AIBackendConfig, server: str, endpoint: EndpointConfig):
+    def __init__(self, config: AIBackendConfig, server: ServerConfig, endpoint: EndpointConfig):
 
         self.service_process = None
         self.is_ready = False
         self.backend_port = None
-        self.host = config.host
+        self.host = server.host
 
         self.type = config.type
-        self.service_name = f"{self.type.name} backend ({server}, {endpoint})"
+        self.service_name = f"{self.type.name} backend ({server.name}, {endpoint.name})"
         self.endpoint = endpoint
 
         self.service_binary = config.binary

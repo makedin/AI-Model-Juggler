@@ -10,6 +10,7 @@ The following backends are currently supported:
 - [Stable Diffusion web UI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) / [Stable Diffusion WebUI Forge](https://github.com/lllyasviel/stable-diffusion-webui-forge)
   - Supports model unloading (without killing the backend server)
   - Supports attaching to a running server (the server must be started with ```--nowebgui``` or ```--api```)
+- [koboldcpp](https://github.com/LostRuins/koboldcpp)
 
 AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
@@ -47,6 +48,9 @@ Example config.json:
             "attach_to": "http://localhost:7861",
             "binary": "/path/to/stable-diffusion-webui-forge/webui.sh",
             "model_unloading": true
+        },
+        "koboldcpp": {
+            "binary": "/path/to/koboldcpp-linux-x64"
         }
     },
     "servers": [
@@ -67,6 +71,16 @@ Example config.json:
                         "--ctx-size", "16384"
                     ],
                     "kv_cache_saving": false
+                },
+            {
+                    "name": "Qwen 3 MoE",
+                    "path_prefix": "/qwen3",
+                    "strip_prefix": true,
+
+                    "backend": "koboldcpp",
+                    "parameters": [
+                        "--config", "/path/to/Qwen3-30B-A3B-Q4_K_M.kcpps"
+                    ]
                 },
                 {
                     "name": "Default LLM",
@@ -104,7 +118,7 @@ Example config.json:
 }
 ```
 
-The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case a vision capable Mistral Small 3.2 will be used instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
+The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case a vision capable Mistral Small 3.2 will be used, or if the path starts with ```/qwen3```, which causes a koboldcpp instance to be started instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
 
 The ```warmup``` section specifies that first, the image generation backend is started, and then the vision capable LLM inference backend. As the feature allowing the image generation backend to keep running with model unloaded is enabled, the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
 

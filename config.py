@@ -21,7 +21,7 @@ class AIBackendType(Enum):
         return self in [AIBackendType.SDWEBUI]
 
     def supportsExcecutingDirectly(self) -> bool:
-        return self in [AIBackendType.LLAMACPP, AIBackendType.SDWEBUI]
+        return self in [AIBackendType.LLAMACPP, AIBackendType.SDWEBUI, AIBackendType.KOBOLDCPP]
 
 
 @dataclass
@@ -32,15 +32,13 @@ class AIBackendConfig:
 
     default_parameters: List
     model_unloading: bool
-    host: str
 
     def __init__(self,
                  type: AIBackendType,
                  binary: str|Path|None = None,
                  attach_to: str|None = None,
                  default_parameters: List|None = None,
-                 model_unloading: bool = True,
-                 host: str = "localhost"):
+                 model_unloading: bool = True):
 
 
         if not type.supportsAttachingToRunningInstance():
@@ -64,7 +62,6 @@ class AIBackendConfig:
         self.attached_instance = attach_to if type.supportsAttachingToRunningInstance() else None
         self.default_parameters = default_parameters if default_parameters is not None else []
         self.model_unloading = type.supportsModelUnloading() and model_unloading
-        self.host = host
 
 @dataclass
 class BackendsConfig:

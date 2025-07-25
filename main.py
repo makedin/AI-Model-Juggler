@@ -11,6 +11,7 @@ from config import loadConfig, getConfig, ServerConfig, AIBackendType
 
 from backends.llamacpp import LLamaCPPBackend
 from backends.sdwebui import SDWebUIBackend
+from backends.koboldcpp import Koboldcpp
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -85,6 +86,7 @@ ai_backend_manager = AIBackendManager()
 backend_classes = {
     AIBackendType.LLAMACPP: "LLamaCPPBackend",
     AIBackendType.SDWEBUI: "SDWebUIBackend",
+    AIBackendType.KOBOLDCPP: "Koboldcpp",
 }
 
 handler_threads = []
@@ -96,7 +98,7 @@ for server_config in config.servers:
         class_name = backend_classes.get(endpoint.backend)
         assert class_name is not None, f"Unsupported backend type: {endpoint.backend}"
 
-        backend = globals()[class_name](backend_config, server_config.host, endpoint)
+        backend = globals()[class_name](backend_config, server_config, endpoint)
 
         ai_backend_manager.addBackend(backend, server_config.name, endpoint.name)
 
