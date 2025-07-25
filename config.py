@@ -31,7 +31,6 @@ class AIBackendConfig:
     attached_instance: str|None
 
     default_parameters: List
-    kv_cache_save_path: Path|None
     model_unloading: bool
     host: str
 
@@ -40,7 +39,6 @@ class AIBackendConfig:
                  binary: str|Path|None = None,
                  attach_to: str|None = None,
                  default_parameters: List|None = None,
-                 kv_cache_save_path: str|Path|None = None,
                  model_unloading: bool = True,
                  host: str = "localhost"):
 
@@ -65,15 +63,14 @@ class AIBackendConfig:
         self.binary = Path(binary) if binary is not None else None
         self.attached_instance = attach_to if type.supportsAttachingToRunningInstance() else None
         self.default_parameters = default_parameters if default_parameters is not None else []
-        self.kv_cache_save_path = Path(kv_cache_save_path) if type.supportsKVCacheRestoring() and kv_cache_save_path is not None else None
         self.model_unloading = type.supportsModelUnloading() and model_unloading
         self.host = host
 
 @dataclass
 class BackendsConfig:
-    llamacpp: AIBackendConfig|None = None
+    llamacpp:  AIBackendConfig|None = None
     koboldcpp: AIBackendConfig|None = None
-    sdwebui: AIBackendConfig|None = None
+    sdwebui:   AIBackendConfig|None = None
 
 
     def __init__(self, config: Dict[str, Dict]):
@@ -111,7 +108,7 @@ class EndpointConfig:
         self.path_prefix = path_prefix
         self.strip_prefix = strip_prefix
         self.parameters = parameters if parameters is not None else []
-        self.kv_cache_saving = kv_cache_saving
+        self.kv_cache_saving = kv_cache_saving if self.backend.supportsKVCacheRestoring() else False
 
 
 @dataclass
@@ -146,9 +143,10 @@ class WarmupConfig:
 
 @dataclass
 class Config:
+    temp_dir: Path
     backends: BackendsConfig
-    servers: List[ServerConfig]
-    warmup: List[WarmupConfig]
+    servers:  List[ServerConfig]
+    warmup:   List[WarmupConfig]
 
 
 config = None
@@ -194,7 +192,17 @@ def loadConfig(path: Path|None) -> Config:
                 endpoint=warmup_config['endpoint']
             ))
 
+        temp_dir = config_data.get('temp_dir', None)
+        if temp_dir is None:
+            if Path('/tmp').exists():
+                temp_dir = Path('/tmp/ai-model-juggler')
+            else:
+                temp_dir = Path('ai-model-juggler').absolute()
+        else:
+            temp_dir = Path(temp_dir).absolute()
+
         config = Config(
+            temp_dir=temp_dir,
             backends=backends_config,
             servers=servers_config,
             warmup=warmup

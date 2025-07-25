@@ -5,22 +5,20 @@ from pathlib import Path
 from typing import List
 
 from aibackend import AIBackend
-from config import AIBackendConfig
+from config import AIBackendConfig, EndpointConfig
 
 class LLamaCPPBackend(AIBackend):
-    def __init__(self, config: AIBackendConfig, server: str, endpoint: str, paramters: List = []):
-        super().__init__(config, server, endpoint, paramters)
+    def __init__(self, config: AIBackendConfig, server: str, endpoint: EndpointConfig):
+        super().__init__(config, server, endpoint)
 
-        self.kv_cache_save_path = config.kv_cache_save_path
         if self.kv_cache_save_path is not None:
             # create the kv cache save path if it doesn't exist
             if not Path(self.kv_cache_save_path).exists():
                 Path(self.kv_cache_save_path).mkdir(parents=True, exist_ok=True)
 
-            self.kv_cache_save_file_name = f"kv_cache-{server}-{endpoint}.bin"
+            self.kv_cache_save_file_name = f"kv_cache-{server}-{endpoint.name}.bin"
 
         self.kv_cache_saved = False
-
 
     def _modifyParameters(self, parameters: List) -> List:
         modified_parameters = parameters + ["--port", str(self.backend_port)]

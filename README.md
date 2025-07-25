@@ -32,10 +32,10 @@ The program requires a configuration file called ```config.json``` to be present
 Example config.json:
 ```json
 {
+    "temp_dir": "/tmp/ai-model-juggler/",
     "backends": {
         "llamacpp": {
             "binary": "/path/to/llama.cpp/build/bin/llama-server",
-            "kv_cache_save_path": "/tmp/llama_kv_cache",
             "default_parameters": [
                 "-ngl", "99",
                 "--no-mmap",

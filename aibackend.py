@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 from typing import List
 
-from config import AIBackendConfig
+from config import AIBackendConfig, EndpointConfig, getConfig
 
 def free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -14,7 +14,8 @@ def free_port():
 
 
 class AIBackend:
-    def __init__(self, config: AIBackendConfig, server: str, endpoint: str, parameters: List = []):
+    def __init__(self, config: AIBackendConfig, server: str, endpoint: EndpointConfig):
+
         self.service_process = None
         self.is_ready = False
         self.backend_port = None
@@ -25,14 +26,14 @@ class AIBackend:
         self.endpoint = endpoint
 
         self.service_binary = config.binary
-        self.service_parameters = config.default_parameters + parameters
+        self.service_parameters = config.default_parameters + endpoint.parameters
 
         self.attached_instance = config.attached_instance
         self.is_attached = False
 
         self.model_unloading = config.model_unloading
 
-        self.kv_cache_save_path = config.kv_cache_save_path
+        self.kv_cache_save_path = getConfig().temp_dir / 'kv_cache' if endpoint.kv_cache_saving else None
 
         self.initial_startup_delay = 0.15  # seconds
         self.subsequent_startup_delay = 0.3  # seconds

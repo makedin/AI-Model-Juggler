@@ -96,7 +96,7 @@ for server_config in config.servers:
         class_name = backend_classes.get(endpoint.backend)
         assert class_name is not None, f"Unsupported backend type: {endpoint.backend}"
 
-        backend = globals()[class_name](backend_config, server_config.host, endpoint.name, endpoint.parameters)
+        backend = globals()[class_name](backend_config, server_config.host, endpoint)
 
         ai_backend_manager.addBackend(backend, server_config.name, endpoint.name)
 
