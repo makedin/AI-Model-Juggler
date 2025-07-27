@@ -14,7 +14,7 @@ The following backends are currently supported:
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
   - Supports model unloading
   - Supports attaching to a running server
-  - ! Cannot be started by AI Model Juggler (yet), must be started manually before using it
+  - ! Cannot be started by AI Model Juggler (yet), must be attached to an already running instance
 
 AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
@@ -55,6 +55,10 @@ Example config.json:
         },
         "koboldcpp": {
             "binary": "/path/to/koboldcpp-linux-x64"
+        },
+        "comfyui": {
+            "attach_to": "http://localhost:8188",
+            "model_unloading": true
         }
     },
     "servers": [
