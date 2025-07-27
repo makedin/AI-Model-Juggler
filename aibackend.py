@@ -3,7 +3,7 @@ import time
 
 from pathlib import Path
 from subprocess import Popen, PIPE
-from typing import List
+from typing import Dict, List
 
 from config import AIBackendConfig, EndpointConfig, getConfig, ServerConfig
 
@@ -144,7 +144,8 @@ class AIBackend:
                 stdout=PIPE,
                 stderr=PIPE,
                 text=True,
-                bufsize=1)
+                bufsize=1,
+                env=self._modifyEnvironment())
 
         time.sleep(self.initial_startup_delay)  # give the service some time to start
 
@@ -179,6 +180,9 @@ class AIBackend:
 
     def _modifyParameters(self, parameters: List) -> List:
         return parameters
+
+    def _modifyEnvironment(self, env: Dict|None = None) -> Dict|None:
+        return env
 
     def _postStartUp(self):
         pass
