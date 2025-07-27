@@ -28,7 +28,7 @@ The code is supposed to be OS agnostic and compatible with any currently maintai
 
 ## Usage
 
-The program requires a configuration file called ```config.json``` to be present. Editing the configuration is the only way to affect the behavior of the program. Once the configuration file has been set up, simply run ```python main.py```.
+The program requires a configuration file called ```config.json``` to be present. Editing the configuration is the only way to affect the behavior of the program. Once the configuration file has been set up, simply run ```python main.py```. Alternatively, the program may be run with a command line argument ```--config <file>``` to make it use a different configuration.
 
 Example config.json:
 ```json
