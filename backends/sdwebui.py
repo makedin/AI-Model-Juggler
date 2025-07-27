@@ -54,7 +54,7 @@ class SDWebUIBackend(AIBackend):
 
 
     def unloadModel(self) -> bool:
-        if not self.isRunning():
+        if not self.is_attached and self.isRunning():
             return False
 
         if not self.checkpoint_potentially_loaded:
