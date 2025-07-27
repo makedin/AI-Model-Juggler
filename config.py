@@ -10,15 +10,16 @@ class AIBackendType(Enum):
     LLAMACPP = "llamacpp"
     KOBOLDCPP = "koboldcpp"
     SDWEBUI = "sdwebui"
+    COMFYUI = "comfyui"
 
     def supportsKVCacheRestoring(self) -> bool:
         return self in [AIBackendType.LLAMACPP]
 
     def supportsModelUnloading(self) -> bool:
-        return self in [AIBackendType.SDWEBUI]
+        return self in [AIBackendType.SDWEBUI, AIBackendType.COMFYUI]
 
     def supportsAttachingToRunningInstance(self) -> bool:
-        return self in [AIBackendType.SDWEBUI]
+        return self in [AIBackendType.SDWEBUI, AIBackendType.COMFYUI]
 
     def supportsExcecutingDirectly(self) -> bool:
         return self in [AIBackendType.LLAMACPP, AIBackendType.SDWEBUI, AIBackendType.KOBOLDCPP]
@@ -68,12 +69,14 @@ class BackendsConfig:
     llamacpp:  AIBackendConfig|None = None
     koboldcpp: AIBackendConfig|None = None
     sdwebui:   AIBackendConfig|None = None
+    comfyui:   AIBackendConfig|None = None
 
 
     def __init__(self, config: Dict[str, Dict]):
         self.llamacpp = None
         self.koboldcpp = None
         self.sdwebui = None
+        self.comfyui = None
 
         for key in config.keys():
             if key not in AIBackendType:

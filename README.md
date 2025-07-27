@@ -11,6 +11,10 @@ The following backends are currently supported:
   - Supports model unloading (without killing the backend server)
   - Supports attaching to a running server (the server must be started with ```--nowebgui``` or ```--api```)
 - [koboldcpp](https://github.com/LostRuins/koboldcpp)
+- [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
+  - Supports model unloading
+  - Supports attaching to a running server
+  - ! Cannot be started by AI Model Juggler (yet), must be started manually before using it
 
 AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
@@ -97,11 +101,17 @@ Example config.json:
             "host": "localhost",
             "port": 8022,
             "endpoints": [
-                {
-                    "name": "Stable Diffusion",
-                    "path_prefix": "",
-                    "backend": "sdwebui"
-                }
+            {
+                "name": "Stable Diffusion",
+                "path_prefix": "/sdapi",
+                "backend": "sdwebui",
+                "strip_prefix": false,
+            },
+            {
+                "name": "ComfyUI",
+                "path_prefix": "",
+                "backend": "comfyui"
+            }
             ]
         }
     ],
@@ -118,9 +128,11 @@ Example config.json:
 }
 ```
 
-The example configuration defines two servers, one listening on ```locahost:8081``` and the other on ```localhost:8082```. All calls to ```http://localhost:8082``` will go to a Stable Diffusion webUI Forge server unmodified, while calls to ```http://localhost:8081``` will be routed to different backends depending on the request's path.
+The example configuration defines two servers, one listening on ```locahost:8081``` and the other on ```localhost:8082```.
 
 Calls to ```localhost:8081``` with the path starting with ```/vision``` (like ```http://localhost:8081/vision/health```) will go to llama.cpp running a vision capable Mistral Small 3.2, with the path prefix removed (so ```/vision/health``` becomes ```/health```). Calls with the path prefix ```/qwen3``` will be handled by a koboldcpp server running the Qwen3-30B-A3B, again with the prefix stripped. Finally, calls with neither prefix will be handled by a llama.cpp server running Gemma 3 27B.
+
+Calls to ```http://localhost:8082/sdapi``` will be routed to a Stable Diffusion WebUI Forge server. Not that the ```/sdapi``` prefix is not stripped, as it belongs to the actual calls to the API. Calls to ```http://localhost:8082``` without the path prefix will go to a ComfyUI server.
 
 The ```warmup``` section specifies that first, Stable Diffusion WebUI Forge is started, and then the vision capable LLM inference backend. As the image generation backend supports model unloading and the feature is enabled (by default, in fact), the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
 
