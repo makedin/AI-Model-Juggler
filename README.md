@@ -16,7 +16,7 @@ AI Model Juggler is AGI agnostic and does not impose limitations on using the ba
 
 ## Performance
 
-AI Model Juggler performs a couple of tricks to speed things up to make things more transparent. It allows you to keep the image generation backend running while only unloading the checkpoint. This consumes a little VRAM (200 – 300 MB) but allows the generation to start up a lot faster. It also supports llama.cpp's KV cache saving and restoring to save on prompt processing time. Both features are optional, and can be disabled if desired.
+AI Model Juggler performs a couple of tricks to speed things up to make things more transparent. With compatible backends, it supports model unloading, which allows an inactive backend to remain running while still releasing all most of the VRAM. In some cases, this speeds up the start of generation considerably. It also supports llama.cpp's KV cache saving and restoring to save on prompt processing time. Both features are optional, and can be disabled if desired.
 
 It is recommended to store the model files on fast storage. RAM disk is preferred, but a fast NVMe SSD should be perfectly satisfactory. Anything much slower might cause backend start up times to grow to a point where the process is no longer completely transparent to the user.
 
@@ -45,7 +45,7 @@ Example config.json:
             "host": "localhost"
         },
         "sdwebui": {
-            "attach_to": "http://localhost:7861",
+            "attach_to": "http://localhost:7860",
             "binary": "/path/to/stable-diffusion-webui-forge/webui.sh",
             "model_unloading": true
         },
@@ -118,10 +118,13 @@ Example config.json:
 }
 ```
 
-The example configuration defines two servers, one listening on locahost:8081 and the other on localhost:8082. Calls to the former will be forwarded to a llama.cpp instance doing inference on Google's Gemma 3 27B, unless the path starts with ```/vision``` (like ```localhost:8081/vision/health```) in which case a vision capable Mistral Small 3.2 will be used, or if the path starts with ```/qwen3```, which causes a koboldcpp instance to be started instead. All calls to localhost:8082 will go to a Stable Diffusion webUI Forge server.
+The example configuration defines two servers, one listening on ```locahost:8081``` and the other on ```localhost:8082```. All calls to ```http://localhost:8082``` will go to a Stable Diffusion webUI Forge server unmodified, while calls to ```http://localhost:8081``` will be routed to different backends depending on the request's path.
 
-The ```warmup``` section specifies that first, the image generation backend is started, and then the vision capable LLM inference backend. As the feature allowing the image generation backend to keep running with model unloaded is enabled, the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
+Calls to ```localhost:8081``` with the path starting with ```/vision``` (like ```http://localhost:8081/vision/health```) will go to llama.cpp running a vision capable Mistral Small 3.2, with the path prefix removed (so ```/vision/health``` becomes ```/health```). Calls with the path prefix ```/qwen3``` will be handled by a koboldcpp server running the Qwen3-30B-A3B, again with the prefix stripped. Finally, calls with neither prefix will be handled by a llama.cpp server running Gemma 3 27B.
 
+The ```warmup``` section specifies that first, Stable Diffusion WebUI Forge is started, and then the vision capable LLM inference backend. As the image generation backend supports model unloading and the feature is enabled (by default, in fact), the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
+
+The Stable Diffusion WebUI Forge backend will first try to attach to a running instance of the service, available at ```http://localhost:7860```. If the service is not running, a new instance will be started.
 
 ## Limitations
 
