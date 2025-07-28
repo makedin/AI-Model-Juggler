@@ -157,10 +157,10 @@ The Stable Diffusion WebUI Forge backend will first try to attach to a running i
 
 ## Limitations
 
-The project is in a barely working shape. It has very limited support for backends, though adding new ones should be rather simple. There is also very little graceful error handling. Sending multiple requests too rapidly (before the previous one has finished processing) could cause weird issues. There is no user interface of any sort, unless you count the configuration file, and some logging which you shouldn't.
+The project is in a barely working shape. It has very limited support for backends, though adding new ones should be rather simple. There is also very little graceful error handling. Sending multiple requests too rapidly (before the previous one has finished processing) could cause weird issues. There is no user interface of any sort, unless you count the configuration file and some logging. Which you shouldn't.
 
 AI Model Juggler is not a real proxy (not yet, anyway). It simply starts up the requested backend and responds with a 307 redirect to the newly running server. This makes it ill suited for using the llama.cpp's built in web UI.
 
 ## Comparison to other projects
 
-The closest alternative is probably [llama-swap](https://github.com/mostlygeek/llama-swap), which promises to do much the same thing as AI Model Juggler, and more besides. However, it seems to be limited to working with backends that support the OpenAI API, meaning that it probably does not work with Stable Diffusion web UI, at least not without some trickery. Other than that, it is probably superior in every regard.
+The closest alternative is probably [llama-swap](https://github.com/mostlygeek/llama-swap), which promises to do much the same thing as AI Model Juggler, and more besides. However, it seems to be limited to working with backends that support the OpenAI API, while AI Model Juggler is API agnostic. Other than that, llama-swap is probably superior in every regard.
