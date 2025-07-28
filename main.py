@@ -13,6 +13,7 @@ from backends.llamacpp import LLamaCPPBackend
 from backends.sdwebui import SDWebUIBackend
 from backends.koboldcpp import Koboldcpp
 from backends.comfyui import ComfyUI
+from backends.ollama import Ollama
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -89,6 +90,7 @@ backend_classes = {
     AIBackendType.SDWEBUI: "SDWebUIBackend",
     AIBackendType.KOBOLDCPP: "Koboldcpp",
     AIBackendType.COMFYUI: "ComfyUI",
+    AIBackendType.OLLAMA: "Ollama",
 }
 
 handler_threads = []

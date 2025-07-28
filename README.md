@@ -59,6 +59,10 @@ Example config.json:
         "comfyui": {
             "attach_to": "http://localhost:8188",
             "model_unloading": true
+        },
+        "ollama": {
+            "attach_to": "http://localhost:11434",
+            "binary": "/path/to/ollama",
         }
     },
     "servers": [
@@ -80,7 +84,7 @@ Example config.json:
                     ],
                     "kv_cache_saving": false
                 },
-            {
+                {
                     "name": "Qwen 3 MoE",
                     "path_prefix": "/qwen3",
                     "strip_prefix": true,
@@ -89,6 +93,12 @@ Example config.json:
                     "parameters": [
                         "--config", "/path/to/Qwen3-30B-A3B-Q4_K_M.kcpps"
                     ]
+                },
+                {
+                    "name": "Ollama",
+                    "path_prefix": "/ollama",
+                    "strip_prefix": true,
+                    "backend": "ollama"
                 },
                 {
                     "name": "Default LLM",
