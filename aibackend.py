@@ -29,7 +29,7 @@ class AIBackend:
         self.service_parameters = config.default_parameters + endpoint.parameters
 
         self.attached_instance = config.attached_instance
-        self.is_attached = False
+        self._is_attached = False
 
         self.model_unloading = config.model_unloading
 
@@ -52,11 +52,11 @@ class AIBackend:
         return True
 
     def isAttached(self) -> bool:
-        return self.is_attached
+        return self._is_attached
 
 
     def isReady(self) -> bool:
-        if self.is_attached is True:
+        if self.isAttached() is True:
             return True
 
         if not self.isRunning():
@@ -82,7 +82,7 @@ class AIBackend:
 
 
     def stopService(self, force: bool = False):
-        if not self.isRunning():
+        if not self.isRunning() and not self.isAttached():
             return
 
         if self.kv_cache_save_path is not None:

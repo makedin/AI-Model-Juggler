@@ -13,7 +13,7 @@ class SDWebUIBackend(AIBackend):
             raise RuntimeError(f"{self.service_name} is not configured to attach to a running instance.")
 
         if self._testBackendAPI(True):
-            self.is_attached = True
+            self._is_attached = True
             self.checkpoint_potentially_loaded = True
             print(f"Attached to {self.attached_instance}.")
             return True
@@ -32,7 +32,7 @@ class SDWebUIBackend(AIBackend):
         self.checkpoint_potentially_loaded = True
 
     def _apiBaseURL(self, force_attached_instance: bool = False) -> str:
-        if self.attached_instance is not None and (self.is_attached or force_attached_instance):
+        if self.attached_instance is not None and (self.isAttached() or force_attached_instance):
             backend_url = self.attached_instance
         else:
             backend_url = self.backendURL()
@@ -54,7 +54,7 @@ class SDWebUIBackend(AIBackend):
 
 
     def unloadModel(self) -> bool:
-        if not self.is_attached and self.isRunning():
+        if not self.isAttached() and self.isRunning():
             return False
 
         if not self.checkpoint_potentially_loaded:
@@ -76,7 +76,7 @@ class SDWebUIBackend(AIBackend):
             return False
 
     def backendURL(self) -> str:
-        if self.is_attached:
+        if self.isAttached():
             assert self.attached_instance is not None, "Attached instance cannot be None (MyPy...)"
             return self.attached_instance
 
