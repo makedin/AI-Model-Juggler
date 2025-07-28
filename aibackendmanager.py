@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Type
 from aibackend import AIBackend
 
 class AIBackendManager:
@@ -27,3 +27,23 @@ class AIBackendManager:
         for server_endpoint, backend in self._backends.items():
             if server_endpoint not in exclude:
                 backend.stopService()
+
+backends: Dict[str, Type[AIBackend]] = {}
+
+def getBackendClass(name: str) -> Type[AIBackend]:
+    import importlib
+    import inspect
+
+    global backends
+
+    if name in backends:
+        return backends[name]
+
+    module = importlib.import_module(f"backends.{name}")
+    classes = inspect.getmembers(module, inspect.isclass)
+    for _, cls in classes:
+        if issubclass(cls, AIBackend) and cls is not AIBackend:
+            backends[name] = cls
+            return cls
+
+    raise ValueError(f"No Backend class found for '{name}'")

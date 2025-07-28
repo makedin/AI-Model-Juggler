@@ -6,14 +6,8 @@ import threading
 from pathlib import Path
 from typing import Tuple
 
-from aibackendmanager import AIBackendManager
+from aibackendmanager import AIBackendManager, getBackendClass
 from config import loadConfig, getConfig, ServerConfig, AIBackendType
-
-from backends.llamacpp import LLamaCPPBackend
-from backends.sdwebui import SDWebUIBackend
-from backends.koboldcpp import Koboldcpp
-from backends.comfyui import ComfyUI
-from backends.ollama import Ollama
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -85,24 +79,14 @@ config = loadConfig(Path(arguments.config))
 
 ai_backend_manager = AIBackendManager()
 
-backend_classes = {
-    AIBackendType.LLAMACPP: "LLamaCPPBackend",
-    AIBackendType.SDWEBUI: "SDWebUIBackend",
-    AIBackendType.KOBOLDCPP: "Koboldcpp",
-    AIBackendType.COMFYUI: "ComfyUI",
-    AIBackendType.OLLAMA: "Ollama",
-}
-
 handler_threads = []
 
 for server_config in config.servers:
     for endpoint in server_config.endpoints:
         backend_config = getattr(config.backends, endpoint.backend.name.lower())
 
-        class_name = backend_classes.get(endpoint.backend)
-        assert class_name is not None, f"Unsupported backend type: {endpoint.backend}"
-
-        backend = globals()[class_name](backend_config, server_config, endpoint)
+        backend_class = getBackendClass(endpoint.backend.name.lower())
+        backend = backend_class(backend_config, server_config, endpoint)
 
         ai_backend_manager.addBackend(backend, server_config.name, endpoint.name)
 

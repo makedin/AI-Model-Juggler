@@ -4,7 +4,7 @@ from typing import List
 
 from aibackend import AIBackend
 
-class SDWebUIBackend(AIBackend):
+class SDWebUI(AIBackend):
     def _modifyParameters(self, parameters: List = []) -> List:
             return parameters + ["--port", str(self.backend_port), '--nowebui']
 

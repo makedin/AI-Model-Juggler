@@ -7,7 +7,7 @@ from typing import List
 from aibackend import AIBackend
 from config import AIBackendConfig, EndpointConfig
 
-class LLamaCPPBackend(AIBackend):
+class LLaMACPP(AIBackend):
     def __init__(self, config: AIBackendConfig, server: str, endpoint: EndpointConfig):
         super().__init__(config, server, endpoint)
 
