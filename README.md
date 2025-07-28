@@ -14,7 +14,10 @@ The following backends are currently supported:
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
   - Supports model unloading
   - Supports attaching to a running server
-  - ! Cannot be started by AI Model Juggler (yet), must be attached to an already running instance
+  - Note: cannot be started by AI Model Juggler (yet), must be attached to an already running instance
+- [ollama](https://github.com/ollama/ollama)
+  - Supports model unloading
+  - Supports attaching to a running server
 
 AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
@@ -144,7 +147,7 @@ Example config.json:
 
 The example configuration defines two servers, one listening on ```locahost:8081``` and the other on ```localhost:8082```.
 
-Calls to ```localhost:8081``` with the path starting with ```/vision``` (like ```http://localhost:8081/vision/health```) will go to llama.cpp running a vision capable Mistral Small 3.2, with the path prefix removed (so ```/vision/health``` becomes ```/health```). Calls with the path prefix ```/qwen3``` will be handled by a koboldcpp server running the Qwen3-30B-A3B, again with the prefix stripped. Finally, calls with neither prefix will be handled by a llama.cpp server running Gemma 3 27B.
+Calls to ```localhost:8081``` with the path starting with ```/vision``` (like ```http://localhost:8081/vision/health```) will go to llama.cpp running a vision capable Mistral Small 3.2, with the path prefix removed (so ```/vision/health``` becomes ```/health```). Calls with the path prefix ```/qwen3``` will be handled by a koboldcpp server running the Qwen3-30B-A3B, again with the prefix stripped. Calls with the prefix ```/ollama``` go to ollama, which does the model selection based on the POST data. Finally, calls with neither prefix will be handled by a llama.cpp server running Gemma 3 27B.
 
 Calls to ```http://localhost:8082/sdapi``` will be routed to a Stable Diffusion WebUI Forge server. Not that the ```/sdapi``` prefix is not stripped, as it belongs to the actual calls to the API. Calls to ```http://localhost:8082``` without the path prefix will go to a ComfyUI server.
 
