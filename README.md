@@ -144,16 +144,7 @@ Example config.json:
     ]
 }
 ```
-
-The example configuration defines two servers, one listening on ```locahost:8081``` and the other on ```localhost:8082```.
-
-Calls to ```localhost:8081``` with the path starting with ```/vision``` (like ```http://localhost:8081/vision/health```) will go to llama.cpp running a vision capable Mistral Small 3.2, with the path prefix removed (so ```/vision/health``` becomes ```/health```). Calls with the path prefix ```/qwen3``` will be handled by a koboldcpp server running the Qwen3-30B-A3B, again with the prefix stripped. Calls with the prefix ```/ollama``` go to ollama, which does the model selection based on the POST data. Finally, calls with neither prefix will be handled by a llama.cpp server running Gemma 3 27B.
-
-Calls to ```http://localhost:8082/sdapi``` will be routed to a Stable Diffusion WebUI Forge server. Not that the ```/sdapi``` prefix is not stripped, as it belongs to the actual calls to the API. Calls to ```http://localhost:8082``` without the path prefix will go to a ComfyUI server.
-
-The ```warmup``` section specifies that first, Stable Diffusion WebUI Forge is started, and then the vision capable LLM inference backend. As the image generation backend supports model unloading and the feature is enabled (by default, in fact), the backend will not shut down when the LLM backend is spun up, considerably speeding up the first image generation.
-
-The Stable Diffusion WebUI Forge backend will first try to attach to a running instance of the service, available at ```http://localhost:7860```. If the service is not running, a new instance will be started.
+See [configuration documentation](/CONFIGURATION.md) for more on configuration.
 
 ## Limitations
 
