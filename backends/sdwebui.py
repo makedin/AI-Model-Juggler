@@ -5,6 +5,11 @@ from typing import List
 from aibackend import AIBackend
 
 class SDWebUI(AIBackend):
+    supports_executing_directly            = True
+    supports_attaching_to_running_instance = True
+    supports_model_unloading               = True
+
+
     def _modifyParameters(self, parameters: List = []) -> List:
             return parameters + ["--port", str(self.backend_port), '--nowebui']
 

@@ -10,6 +10,8 @@ from aibackend import AIBackend
 from config import getConfig
 
 class Koboldcpp(AIBackend):
+    supports_executing_directly = True
+
     def _modifyParameters(self, parameters: List) -> List:
 
         parser = argparse.ArgumentParser()

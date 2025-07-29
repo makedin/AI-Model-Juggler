@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Tuple
 
 from aibackendmanager import AIBackendManager, getBackendClass
-from config import loadConfig, getConfig, ServerConfig, AIBackendType
+from config import loadConfig, getConfig, ServerConfig
 
 class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -83,9 +83,9 @@ handler_threads = []
 
 for server_config in config.servers:
     for endpoint in server_config.endpoints:
-        backend_config = getattr(config.backends, endpoint.backend.name.lower())
+        backend_config = config.backends[endpoint.backend]
 
-        backend_class = getBackendClass(endpoint.backend.name.lower())
+        backend_class = getBackendClass(endpoint.backend)
         backend = backend_class(backend_config, server_config, endpoint)
 
         ai_backend_manager.addBackend(backend, server_config.name, endpoint.name)

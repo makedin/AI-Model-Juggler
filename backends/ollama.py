@@ -7,6 +7,11 @@ from typing import Dict, List
 from aibackend import AIBackend
 
 class Ollama(AIBackend):
+    supports_executing_directly            = True
+    supports_attaching_to_running_instance = True
+    supports_model_unloading               = True
+
+
     def attachInstance(self) -> bool:
         if self.attached_instance is None:
             raise RuntimeError(f"{self.service_name} is not configured to attach to a running instance.")

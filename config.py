@@ -1,34 +1,14 @@
 import json
 
 from dataclasses import dataclass
-from enum import Enum
 from pathlib import Path
 
 from typing import Dict, List
 
-class AIBackendType(Enum):
-    LLAMACPP = "llamacpp"
-    KOBOLDCPP = "koboldcpp"
-    SDWEBUI = "sdwebui"
-    COMFYUI = "comfyui"
-    OLLAMA = "ollama"
-
-    def supportsKVCacheRestoring(self) -> bool:
-        return self in [AIBackendType.LLAMACPP]
-
-    def supportsModelUnloading(self) -> bool:
-        return self in [AIBackendType.SDWEBUI, AIBackendType.COMFYUI, AIBackendType.OLLAMA]
-
-    def supportsAttachingToRunningInstance(self) -> bool:
-        return self in [AIBackendType.SDWEBUI, AIBackendType.COMFYUI, AIBackendType.OLLAMA]
-
-    def supportsExcecutingDirectly(self) -> bool:
-        return self in [AIBackendType.LLAMACPP, AIBackendType.SDWEBUI, AIBackendType.KOBOLDCPP, AIBackendType.OLLAMA]
-
 
 @dataclass
 class AIBackendConfig:
-    type:   AIBackendType
+    type:   str
     binary: Path|None
     attached_instance: str|None
 
@@ -36,20 +16,22 @@ class AIBackendConfig:
     model_unloading: bool
 
     def __init__(self,
-                 type: AIBackendType,
+                 type: str,
                  binary: str|Path|None = None,
                  attach_to: str|None = None,
                  default_parameters: List|None = None,
                  model_unloading: bool = True):
 
+        from aibackendmanager import getBackendClass
+        backend_class = getBackendClass(type)
 
-        if not type.supportsAttachingToRunningInstance():
+        if not backend_class.supports_attaching_to_running_instance:
             if attach_to is not None:
                 raise ValueError(f"Backend type {type} does not support attaching to a running instance.")
             if binary is None:
                 raise ValueError(f"Backend type {type} requires a binary path.")
 
-        if not type.supportsExcecutingDirectly():
+        if not backend_class.supports_executing_directly:
             if binary is not None:
                 raise ValueError(f"Backend type {type} does not support executing directly.")
             if attach_to is None:
@@ -61,42 +43,14 @@ class AIBackendConfig:
 
         self.type = type
         self.binary = Path(binary) if binary is not None else None
-        self.attached_instance = attach_to if type.supportsAttachingToRunningInstance() else None
+        self.attached_instance = attach_to if backend_class.supports_attaching_to_running_instance else None
         self.default_parameters = default_parameters if default_parameters is not None else []
-        self.model_unloading = type.supportsModelUnloading() and model_unloading
-
-@dataclass
-class BackendsConfig:
-    llamacpp:  AIBackendConfig|None = None
-    koboldcpp: AIBackendConfig|None = None
-    sdwebui:   AIBackendConfig|None = None
-    comfyui:   AIBackendConfig|None = None
-    ollama:    AIBackendConfig|None = None
-
-    def __init__(self, config: Dict[str, Dict]):
-        self.llamacpp = None
-        self.koboldcpp = None
-        self.sdwebui = None
-        self.comfyui = None
-        self.ollama = None
-
-        for key in config.keys():
-            if key not in AIBackendType:
-                raise ValueError(f"Unknown backend type: {key}")
-
-            backend_type = AIBackendType(key)
-
-            if getattr(self, key) is not None:
-                raise ValueError(f"Duplicate backend configuration for {key}")
-
-            backend = AIBackendConfig(backend_type, **config[key])
-
-            setattr(self, key, backend)
+        self.model_unloading = backend_class.supports_model_unloading and model_unloading
 
 @dataclass
 class EndpointConfig:
     name: str
-    backend: AIBackendType
+    backend: str
     parameters: List
 
     path_prefix: str = ""
@@ -104,13 +58,15 @@ class EndpointConfig:
 
     kv_cache_saving: bool = True
 
-    def __init__(self, name: str, backend: str|AIBackendType, path_prefix: str, strip_prefix: bool = False, parameters: List|None = None, kv_cache_saving: bool = True):
+    def __init__(self, name: str, backend: str, path_prefix: str, strip_prefix: bool = False, parameters: List|None = None, kv_cache_saving: bool = True):
+        from aibackendmanager import getBackendClass
+
         self.name = name
-        self.backend = backend if isinstance(backend, AIBackendType) else AIBackendType(backend)
+        self.backend = backend
         self.path_prefix = path_prefix
         self.strip_prefix = strip_prefix
         self.parameters = parameters if parameters is not None else []
-        self.kv_cache_saving = kv_cache_saving if self.backend.supportsKVCacheRestoring() else False
+        self.kv_cache_saving = kv_cache_saving if getBackendClass(backend).supports_kv_cache_restoring else False
 
 
 @dataclass
@@ -146,7 +102,7 @@ class WarmupConfig:
 @dataclass
 class Config:
     temp_dir: Path
-    backends: BackendsConfig
+    backends: Dict[str, AIBackendConfig]
     servers:  List[ServerConfig]
     warmup:   List[WarmupConfig]
 
@@ -174,7 +130,12 @@ def loadConfig(path: Path|None) -> Config:
     with open(config_path, 'r') as file:
         config_data = json.load(file)
 
-        backends_config = BackendsConfig(config_data['backends'])
+        backends: Dict[str, AIBackendConfig] = {}
+        for name, backend_conf in config_data.get('backends').items():
+            if name in backends:
+                raise ValueError(f"Duplicate backend configuration for {name}")
+
+            backends[name] = AIBackendConfig(name, **backend_conf)
 
         servers_config = []
         server_ports = set()
@@ -205,7 +166,7 @@ def loadConfig(path: Path|None) -> Config:
 
         config = Config(
             temp_dir=temp_dir,
-            backends=backends_config,
+            backends=backends,
             servers=servers_config,
             warmup=warmup
         )

@@ -14,6 +14,11 @@ def free_port():
 
 
 class AIBackend:
+    supports_executing_directly            = False
+    supports_attaching_to_running_instance = False
+    supports_kv_cache_restoring            = False
+    supports_model_unloading               = False
+
     def __init__(self, config: AIBackendConfig, server: ServerConfig, endpoint: EndpointConfig):
 
         self.service_process = None
@@ -22,7 +27,7 @@ class AIBackend:
         self.host = server.host
 
         self.type = config.type
-        self.service_name = f"{self.type.name} backend ({server.name}, {endpoint.name})"
+        self.service_name = f"{self.type} backend ({server.name}, {endpoint.name})"
         self.endpoint = endpoint
 
         self.service_binary = config.binary
@@ -95,7 +100,7 @@ class AIBackend:
             self.shutdown()
 
     def attachInstance(self) -> bool:
-        raise NotImplementedError("Instance attachment is not implemented for this backend.")
+        raise NotImplementedError(f"Instance attachment is not implemented for {type(self).__name__} backend.")
 
     def unloadModel(self):
         raise NotImplementedError("Model unloading is not implemented for this backend.")

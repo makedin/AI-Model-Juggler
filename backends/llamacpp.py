@@ -8,6 +8,9 @@ from aibackend import AIBackend
 from config import AIBackendConfig, EndpointConfig
 
 class LLaMACPP(AIBackend):
+    supports_executing_directly = True
+    supports_kv_cache_restoring = True
+
     def __init__(self, config: AIBackendConfig, server: str, endpoint: EndpointConfig):
         super().__init__(config, server, endpoint)
 
