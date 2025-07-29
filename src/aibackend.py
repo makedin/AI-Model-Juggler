@@ -137,7 +137,8 @@ class AIBackend:
             return True
 
         if not Path(self._getServiceBinaryPath()).exists():
-            raise FileNotFoundError(f"Service binary {self.service_binary} does not exist.")
+            print(f"Service binary {self.service_binary} does not exist.")
+            return False
 
         print(f"Starting {self.service_name}...")
 
@@ -156,7 +157,8 @@ class AIBackend:
         time.sleep(self.initial_startup_delay)  # give the service some time to start
 
         if not self.isRunning():
-            raise RuntimeError("Service failed to start.")
+            print("Service failed to start.")
+            return False
 
 
         delay = self.startup_delay_multiplier
