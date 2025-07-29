@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict, Literal, Type
 from aibackend import AIBackend
 
 class AIBackendManager:
@@ -14,12 +14,14 @@ class AIBackendManager:
             backend = self._backends[server_endpoint]
             backend.stopService()
 
-    def getBackend(self, server_endpoint: str) -> AIBackend:
+    def getBackend(self, server_endpoint: str) -> AIBackend|Literal[False]:
         if server_endpoint in self._backends:
             self.stopAllBackends(exclude=[server_endpoint])
             model = self._backends[server_endpoint]
-            model.readyService()
-            return model
+            if model.readyService():
+                return model
+            else:
+                return False
 
         raise ValueError(f"Backend for server:endpoint '{server_endpoint}' not found.")
 

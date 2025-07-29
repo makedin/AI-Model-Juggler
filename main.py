@@ -45,7 +45,15 @@ class AIAPIHandler(http.server.SimpleHTTPRequestHandler):
                     path = self.path[len(endpoint.path_prefix):]
                 break
 
-        assert backend is not None, f"No backend found for path: {self.path}"
+        if backend is None:
+            self.send_error(404, "Endpoint not found")
+            print (f'{self.host}:{self.port}: endpoint not found for path "{self.path}"')
+            return
+
+        if backend is False:
+            print (f'{self.host}:{self.port}: backend for "{endpoint.name}" could not be started.')
+            self.send_error(503, "Backend not available", "Backend could not be started")
+            return
 
         backend_url = backend.backendURL()
 

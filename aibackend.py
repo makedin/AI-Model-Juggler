@@ -126,7 +126,8 @@ class AIBackend:
         if self.service_binary is not None:
             return self.startService()
 
-        raise RuntimeError("Service binary is not set and no instance is attached.")
+        print(f"Service {self.type} binary is not set and no instance is attached.")
+        return False
 
 
     def startService(self) -> bool:
