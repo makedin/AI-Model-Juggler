@@ -6,8 +6,8 @@ from pathlib import Path
 from time import time
 from typing import List
 
-from aibackend import AIBackend
-from config import getConfig
+from ..aibackend import AIBackend
+from ..config import getConfig
 
 class Koboldcpp(AIBackend):
     supports_executing_directly = True

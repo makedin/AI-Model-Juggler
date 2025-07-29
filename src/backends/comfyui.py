@@ -1,17 +1,17 @@
+import json
 import urllib.error, urllib.request
 
 from typing import List
 
-from aibackend import AIBackend
+from ..aibackend import AIBackend
 
-class SDWebUI(AIBackend):
-    supports_executing_directly            = True
+class ComfyUI(AIBackend):
     supports_attaching_to_running_instance = True
     supports_model_unloading               = True
 
 
     def _modifyParameters(self, parameters: List = []) -> List:
-            return parameters + ["--port", str(self.backend_port), '--nowebui']
+            return parameters + ["--port", str(self.backend_port)]
 
     def attachInstance(self) -> bool:
         if self.attached_instance is None:
@@ -36,17 +36,10 @@ class SDWebUI(AIBackend):
     def _postStartup(self):
         self.checkpoint_potentially_loaded = True
 
-    def _apiBaseURL(self, force_attached_instance: bool = False) -> str:
-        if self.attached_instance is not None and (self.isAttached() or force_attached_instance):
-            backend_url = self.attached_instance
-        else:
-            backend_url = self.backendURL()
-
-        return f'{backend_url}/sdapi/v1'
-
-    def _testBackendAPI(self, force_attached_instance: bool = False) -> bool:
+    def _testBackendAPI(self, force_attached: bool = False) -> bool:
         try:
-            with urllib.request.urlopen(f'{self._apiBaseURL(force_attached_instance)}/memory') as response:
+            backend_url = self.attached_instance if force_attached else self.backendURL()
+            with urllib.request.urlopen(f'{backend_url}/system_stats') as response:
                 if response.status == 200:
                     self.is_ready = True
                     self.checkpoint_potentially_loaded = True
@@ -66,10 +59,13 @@ class SDWebUI(AIBackend):
             return True
 
         try:
+            data = json.dumps({"unload_models": True}).encode('utf-8')
             request = urllib.request.Request(
-                f'http://{self._apiBaseURL()}/unload-checkpoint',
-                method='POST'
+                f'http://{self.backendURL()}/free',
+                method='POST',
+                data=data,
             )
+            request.add_header('Content-Type', 'application/json')
             with urllib.request.urlopen(request) as response:
                 if response.status == 200:
                     print(f"{self.service_name} checkpoint unloaded successfully.")

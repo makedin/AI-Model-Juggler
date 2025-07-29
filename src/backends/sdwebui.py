@@ -1,23 +1,24 @@
-import json
 import urllib.error, urllib.request
 
-from os import environ
-from typing import Dict, List
+from typing import List
 
-from aibackend import AIBackend
+from ..aibackend import AIBackend
 
-class Ollama(AIBackend):
+class SDWebUI(AIBackend):
     supports_executing_directly            = True
     supports_attaching_to_running_instance = True
     supports_model_unloading               = True
 
+
+    def _modifyParameters(self, parameters: List = []) -> List:
+            return parameters + ["--port", str(self.backend_port), '--nowebui']
 
     def attachInstance(self) -> bool:
         if self.attached_instance is None:
             raise RuntimeError(f"{self.service_name} is not configured to attach to a running instance.")
 
         if self._testBackendAPI(True):
-            self.is_attached = True
+            self._is_attached = True
             self.checkpoint_potentially_loaded = True
             print(f"Attached to {self.attached_instance}.")
             return True
@@ -41,11 +42,11 @@ class Ollama(AIBackend):
         else:
             backend_url = self.backendURL()
 
-        return f'{backend_url}/api'
+        return f'{backend_url}/sdapi/v1'
 
     def _testBackendAPI(self, force_attached_instance: bool = False) -> bool:
         try:
-            with urllib.request.urlopen(f'{self._apiBaseURL(force_attached_instance)}/version') as response:
+            with urllib.request.urlopen(f'{self._apiBaseURL(force_attached_instance)}/memory') as response:
                 if response.status == 200:
                     self.is_ready = True
                     self.checkpoint_potentially_loaded = True
@@ -58,58 +59,27 @@ class Ollama(AIBackend):
 
 
     def unloadModel(self) -> bool:
-        if not self.isAttached() and not self.isRunning():
+        if not self.isAttached() and self.isRunning():
             return False
 
         if not self.checkpoint_potentially_loaded:
             return True
 
         try:
-            models = []
-            with urllib.request.urlopen(f'{self._apiBaseURL()}/ps') as response:
-                if response.status != 200:
-                    return False
+            request = urllib.request.Request(
+                f'http://{self._apiBaseURL()}/unload-checkpoint',
+                method='POST'
+            )
+            with urllib.request.urlopen(request) as response:
+                if response.status == 200:
+                    print(f"{self.service_name} checkpoint unloaded successfully.")
+                    self.checkpoint_potentially_loaded = False
+                    return True
 
-                models = json.loads(response.read().decode('utf-8'))['models']
-
-            for model in models:
-                model_name = model['name']
-
-                request = urllib.request.Request(
-                    f'{self._apiBaseURL()}/generate',
-                    method='POST',
-                    headers={'Content-Type': 'application/json'},
-                    data=json.dumps({
-                        'model': model_name,
-                        'keep_alive': 0,
-                    }).encode('utf-8')
-                )
-
-                with urllib.request.urlopen(request) as response:
-                    if response.status != 200:
-                        print(f"Failed to unload model {model_name}.")
-                        return False
-
+                return False
         except urllib.error.URLError as _:
             return False
 
-                      
-        self.checkpoint_potentially_loaded = False
-        print(f"{self.service_name} models unloaded.")
-        return True
-
-    def _modifyParameters(self, parameters: List = []) -> List:
-            return ['serve'] + parameters
-
-    def _modifyEnvironment(self, env: Dict|None = None) -> Dict|None:
-        if env is None:
-            env = environ.copy()
-
-        env['OLLAMA_HOST'] = f"{self.host}:{self.backend_port}"
-
-        return env
-
-          
     def backendURL(self) -> str:
         if self.isAttached():
             assert self.attached_instance is not None, "Attached instance cannot be None (MyPy...)"

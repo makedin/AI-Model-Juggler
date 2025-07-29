@@ -5,7 +5,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 from typing import Dict, List
 
-from config import AIBackendConfig, EndpointConfig, getConfig, ServerConfig
+from .config import AIBackendConfig, EndpointConfig, getConfig, ServerConfig
 
 def free_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

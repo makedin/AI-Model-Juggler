@@ -1,5 +1,6 @@
 from typing import Dict, Literal, Type
-from aibackend import AIBackend
+
+from .aibackend import AIBackend
 
 class AIBackendManager:
     def __init__(self):
@@ -30,6 +31,13 @@ class AIBackendManager:
             if server_endpoint not in exclude:
                 backend.stopService()
 
+_backend_manager = AIBackendManager()
+
+def getBackendManager() -> AIBackendManager:
+    global _backend_manager
+    return _backend_manager
+
+
 backends: Dict[str, Type[AIBackend]] = {}
 
 def getBackendClass(name: str) -> Type[AIBackend]:
@@ -41,7 +49,7 @@ def getBackendClass(name: str) -> Type[AIBackend]:
     if name in backends:
         return backends[name]
 
-    module = importlib.import_module(f"backends.{name}")
+    module = importlib.import_module(f".backends.{name}", package="src")
     classes = inspect.getmembers(module, inspect.isclass)
     for _, cls in classes:
         if issubclass(cls, AIBackend) and cls is not AIBackend:

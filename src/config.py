@@ -5,7 +5,6 @@ from pathlib import Path
 
 from typing import Dict, List
 
-
 @dataclass
 class AIBackendConfig:
     type:   str
@@ -22,7 +21,7 @@ class AIBackendConfig:
                  default_parameters: List|None = None,
                  model_unloading: bool = True):
 
-        from aibackendmanager import getBackendClass
+        from .aibackendmanager import getBackendClass
         backend_class = getBackendClass(type)
 
         if not backend_class.supports_attaching_to_running_instance:
@@ -59,7 +58,7 @@ class EndpointConfig:
     kv_cache_saving: bool = True
 
     def __init__(self, name: str, backend: str, path_prefix: str, strip_prefix: bool = False, parameters: List|None = None, kv_cache_saving: bool = True):
-        from aibackendmanager import getBackendClass
+        from .aibackendmanager import getBackendClass
 
         self.name = name
         self.backend = backend

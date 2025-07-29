@@ -4,8 +4,8 @@ import urllib.request, urllib.error
 from pathlib import Path
 from typing import List
 
-from aibackend import AIBackend
-from config import AIBackendConfig, EndpointConfig
+from ..aibackend import AIBackend
+from ..config import AIBackendConfig, EndpointConfig
 
 class LLaMACPP(AIBackend):
     supports_executing_directly = True
