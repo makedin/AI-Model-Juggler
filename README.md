@@ -19,7 +19,7 @@ The following backends are currently supported:
   - Supports model unloading
   - Supports attaching to a running server
 
-AI Model Juggler is AGI agnostic and does not impose limitations on using the backends through their HTTP APIs.
+AI Model Juggler is API agnostic and does not impose limitations on using the backends through their HTTP APIs.
 
 ## Performance
 
